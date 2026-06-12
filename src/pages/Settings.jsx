@@ -107,7 +107,7 @@ export default function Settings() {
             <img 
               src={company.logo} 
               alt="Logo da Empresa" 
-              style={{ height: '80px', maxWidth: '200px', objectFit: 'contain', background: 'rgba(255,255,255,0.1)' }}
+              style={{ maxHeight: '100px', maxWidth: '300px', width: '100%', objectFit: 'contain', background: 'rgba(255,255,255,0.1)' }}
               className="rounded p-1 inline-block" 
             />
           </div>

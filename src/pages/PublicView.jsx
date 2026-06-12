@@ -54,7 +54,7 @@ export default function PublicView() {
         <img 
           src={session.company_logo} 
           alt={session.company_name} 
-          style={{ height: '80px', maxWidth: '200px', objectFit: 'contain', background: 'rgba(255,255,255,0.05)', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
+          style={{ maxHeight: '140px', maxWidth: '350px', width: '100%', objectFit: 'contain', background: 'rgba(255,255,255,0.05)', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
           className="rounded-lg p-2 mb-4" 
         />
       ) : (
