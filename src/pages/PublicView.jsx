@@ -54,7 +54,7 @@ export default function PublicView() {
         <img 
           src={session.company_logo} 
           alt={session.company_name} 
-          className="h-12 max-w-[200px] mb-2 object-contain" 
+          className="h-16 max-w-[200px] rounded-xl bg-white/5 p-2 mb-4 object-contain shadow-sm" 
         />
       ) : (
         <h1 className="text-3xl text-accent mb-2">{session.company_name || 'Playground'}</h1>
