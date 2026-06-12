@@ -107,7 +107,7 @@ export default function Settings() {
             <img 
               src={company.logo} 
               alt="Logo da Empresa" 
-              style={{ height: '80px', maxWidth: '100%', objectFit: 'contain' }}
+              style={{ height: '60px', maxWidth: '200px', objectFit: 'contain' }}
               className="rounded bg-white/10 p-1 inline-block" 
             />
           </div>
