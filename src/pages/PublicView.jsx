@@ -50,7 +50,15 @@ export default function PublicView() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[80vh] text-center">
-      <h1 className="text-3xl text-accent mb-2">Playground Feliz</h1>
+      {session.company_logo ? (
+        <img 
+          src={session.company_logo} 
+          alt={session.company_name} 
+          className="h-16 mb-2 object-contain" 
+        />
+      ) : (
+        <h1 className="text-3xl text-accent mb-2">{session.company_name || 'Playground'}</h1>
+      )}
       <p className="text-secondary mb-8">Acompanhe o tempo de brincadeira!</p>
 
       <div className="glass-panel w-full max-w-sm">
