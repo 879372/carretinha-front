@@ -96,7 +96,9 @@ export default function Dashboard() {
   const [plans, setPlans] = useState([]);
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [selectedPlan, setSelectedPlan] = useState("");
-  const [selectedPayment, setSelectedPayment] = useState("");
+  const [payments, setPayments] = useState([]);
+  const [customDuration, setCustomDuration] = useState("");
+  const [customPrice, setCustomPrice] = useState("");
 
   const handleOpenAddTime = async (id) => {
     console.log("handleOpenAddTime called for id:", id);
@@ -109,15 +111,17 @@ export default function Dashboard() {
           api.get(`/companies/${companyId}/payment-methods/`)
         ]);
         console.log("Fetched!");
-        const fetchedPlans = resP.data.results || resP.data;
+        const fetchedPlans = (resP.data.results || resP.data).filter(p => p.is_active !== false);
         const fetchedMethods = resM.data.results || resM.data;
         setPlans(fetchedPlans);
         setPaymentMethods(fetchedMethods);
         if (fetchedPlans.length > 0) setSelectedPlan(fetchedPlans[0].id);
-        if (fetchedMethods.length > 0) setSelectedPayment(fetchedMethods[0].id);
+        if (fetchedMethods.length > 0) setPayments([{ payment_method: fetchedMethods[0].id, amount: '' }]);
       } catch (e) {
         console.error("Erro ao carregar opções:", e);
       }
+    } else {
+      if (paymentMethods.length > 0) setPayments([{ payment_method: paymentMethods[0].id, amount: '' }]);
     }
     console.log("Opening modal...");
     setIsModalOpen(true);
@@ -125,12 +129,27 @@ export default function Dashboard() {
 
   const submitAddTime = async () => {
     if (!selectedPlan) return;
+    
+    const payload = {};
+    const paymentsPayload = [...payments];
+    if (paymentsPayload.length === 1 && !paymentsPayload[0].amount) {
+      const totalPrice = selectedPlan === 'other' ? customPrice : plans.find(p => p.id === selectedPlan)?.price;
+      paymentsPayload[0].amount = totalPrice || 0;
+    }
+    payload.payments = paymentsPayload;
+
+    if (selectedPlan === 'other') {
+      payload.custom_duration_minutes = customDuration;
+      payload.custom_price = customPrice;
+    } else {
+      payload.plan = selectedPlan;
+    }
+
     try {
-      await api.post(`/companies/${companyId}/sessions/${modalSessionId}/add_time/`, {
-        plan: selectedPlan,
-        payment_method: selectedPayment
-      });
+      await api.post(`/companies/${companyId}/sessions/${modalSessionId}/add_time/`, payload);
       setIsModalOpen(false);
+      setCustomDuration("");
+      setCustomPrice("");
       fetchSessions();
     } catch(e) {
       alert("Erro ao adicionar tempo.");
@@ -203,20 +222,92 @@ export default function Dashboard() {
                 {plans.map(p => (
                   <option key={p.id} value={p.id}>{p.name} — R$ {p.price}</option>
                 ))}
+                <option value="other">Outro (Personalizado)</option>
               </select>
             </div>
 
+            {selectedPlan === 'other' && (
+              <div className="form-group flex gap-4 mt-2">
+                <div className="flex-1">
+                  <label className="form-label">Tempo (minutos)</label>
+                  <input 
+                    type="number" 
+                    className="form-input" 
+                    required 
+                    min="1"
+                    value={customDuration}
+                    onChange={(e) => setCustomDuration(e.target.value)}
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="form-label">Valor (R$)</label>
+                  <input 
+                    type="number" 
+                    className="form-input" 
+                    required 
+                    min="0"
+                    step="0.01"
+                    value={customPrice}
+                    onChange={(e) => setCustomPrice(e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
+
             <div className="form-group">
-              <label className="form-label">Forma de Pagamento</label>
-              <select className="form-select" value={selectedPayment} onChange={e => setSelectedPayment(e.target.value)}>
-                {paymentMethods.map(pm => (
-                  <option key={pm.id} value={pm.id}>{pm.name}</option>
-                ))}
-              </select>
+              <div className="flex justify-between items-center mb-2">
+                <label className="form-label mb-0">Pagamento</label>
+                <button type="button" className="text-sm text-accent hover:underline" onClick={() => {
+                  if (paymentMethods.length > 0) {
+                    setPayments([...payments, { payment_method: paymentMethods[0].id, amount: '' }]);
+                  }
+                }}>+ Dividir pagamento</button>
+              </div>
+              {payments.map((p, index) => (
+                <div key={index} className="flex gap-2 mb-2 items-center">
+                  <select 
+                    className="form-select flex-1"
+                    value={p.payment_method}
+                    onChange={(e) => {
+                      const newP = [...payments];
+                      newP[index].payment_method = e.target.value;
+                      setPayments(newP);
+                    }}
+                    required
+                  >
+                    {paymentMethods.map(pm => (
+                      <option key={pm.id} value={pm.id}>{pm.name}</option>
+                    ))}
+                  </select>
+                  <input 
+                    type="number" 
+                    className="form-input w-24" 
+                    placeholder="Valor"
+                    min="0"
+                    step="0.01"
+                    required={payments.length > 1}
+                    value={p.amount}
+                    onChange={(e) => {
+                      const newP = [...payments];
+                      newP[index].amount = e.target.value;
+                      setPayments(newP);
+                    }}
+                  />
+                  {payments.length > 1 && (
+                    <button type="button" className="text-danger font-bold px-2" onClick={() => {
+                      setPayments(payments.filter((_, i) => i !== index));
+                    }}>X</button>
+                  )}
+                </div>
+              ))}
             </div>
 
             <div className="flex gap-2 mt-6">
-              <button className="btn bg-slate-700 text-white flex-1" onClick={() => setIsModalOpen(false)}>Cancelar</button>
+              <button className="btn bg-slate-700 text-white flex-1" onClick={() => {
+                setIsModalOpen(false);
+                setCustomDuration("");
+                setCustomPrice("");
+              }}>Cancelar</button>
               <button className="btn btn-primary flex-1" onClick={submitAddTime}>Adicionar</button>
             </div>
           </div>
