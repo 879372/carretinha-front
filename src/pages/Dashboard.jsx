@@ -194,15 +194,46 @@ export default function Dashboard() {
     }
   };
 
-  const sortedSessions = [...sessions].sort((a, b) => {
-    if (a.status === 'finished' && b.status !== 'finished') return 1;
-    if (a.status !== 'finished' && b.status === 'finished') return -1;
-    return a.remaining_seconds - b.remaining_seconds;
-  });
+  const sortedSessions = [...sessions]
+    .filter(s => s.status !== 'finished')
+    .sort((a, b) => {
+      return a.remaining_seconds - b.remaining_seconds;
+    });
+
+  const totalsByMethod = sessions.reduce((acc, session) => {
+    if (session.payments && Array.isArray(session.payments)) {
+      session.payments.forEach(payment => {
+        const methodName = payment.payment_method_name || 'Desconhecido';
+        const amount = parseFloat(payment.amount) || 0;
+        acc[methodName] = (acc[methodName] || 0) + amount;
+      });
+    }
+    return acc;
+  }, {});
+
+  const totalAmount = Object.values(totalsByMethod).reduce((sum, val) => sum + val, 0);
 
   return (
     <div>
-      <h1 className="mb-4 text-2xl text-accent">Sessões Ativas</h1>
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl text-accent">Sessões Ativas</h1>
+      </div>
+
+      <div className="glass-panel mb-6 flex flex-wrap gap-6 items-center">
+        <div className="text-sm">
+          <span className="text-secondary block mb-1">Total Recebido</span>
+          <span className="text-xl font-bold text-accent">R$ {totalAmount.toFixed(2).replace('.', ',')}</span>
+        </div>
+        {Object.keys(totalsByMethod).length > 0 && (
+          <div className="w-px h-10 bg-slate-700 hidden sm:block mx-2"></div>
+        )}
+        {Object.entries(totalsByMethod).map(([method, total]) => (
+          <div key={method} className="text-sm">
+            <span className="text-secondary block mb-1">{method}</span>
+            <span className="font-semibold text-primary">R$ {total.toFixed(2).replace('.', ',')}</span>
+          </div>
+        ))}
+      </div>
       {loading ? (
         <p>Carregando...</p>
       ) : sortedSessions.length === 0 ? (
