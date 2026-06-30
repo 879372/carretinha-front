@@ -34,8 +34,21 @@ export default function Analytics() {
 
   // Cálculos do Dashboard
   const totalSessions = sessions.length;
-  
-  const totalRevenue = sessions.reduce((acc, s) => {
+
+  const totalsByMethod = sessions.reduce((acc, session) => {
+    if (session.payments && Array.isArray(session.payments)) {
+      session.payments.forEach(payment => {
+        const methodName = payment.payment_method_name || 'Desconhecido';
+        const amount = parseFloat(payment.amount) || 0;
+        acc[methodName] = (acc[methodName] || 0) + amount;
+      });
+    }
+    return acc;
+  }, {});
+
+  const totalAmount = Object.values(totalsByMethod).reduce((sum, val) => sum + val, 0);
+
+  const totalRevenue = totalAmount > 0 ? totalAmount : sessions.reduce((acc, s) => {
     const paid = s.amount_paid != null ? Number(s.amount_paid) : Number(s.plan_price || 0);
     return acc + paid;
   }, 0);
@@ -85,6 +98,22 @@ export default function Analytics() {
               <span className="text-xs text-secondary mt-1">Brincando Agora</span>
             </div>
           </div>
+
+          {Object.keys(totalsByMethod).length > 0 && (
+            <div className="glass-panel mb-8 flex flex-wrap gap-6 items-center">
+              <div className="text-sm">
+                <span className="text-secondary block mb-1">Total Recebido</span>
+                <span className="text-xl font-bold text-accent">R$ {totalAmount.toFixed(2).replace('.', ',')}</span>
+              </div>
+              <div className="w-px h-10 bg-slate-700 hidden sm:block mx-2"></div>
+              {Object.entries(totalsByMethod).map(([method, total]) => (
+                <div key={method} className="text-sm">
+                  <span className="text-secondary block mb-1">{method}</span>
+                  <span className="font-semibold text-primary">R$ {total.toFixed(2).replace('.', ',')}</span>
+                </div>
+              ))}
+            </div>
+          )}
 
           <div className="glass-panel">
             <h2 className="text-lg mb-4 text-accent">Sessões Recentes</h2>
